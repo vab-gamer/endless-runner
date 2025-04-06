@@ -1,8 +1,7 @@
 const config = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 400,
-  backgroundColor: "#87CEEB",
+  width: window.innerWidth,
+  height: window.innerHeight,
   physics: {
     default: "arcade",
     arcade: {
@@ -10,10 +9,10 @@ const config = {
       debug: false
     }
   },
-  scene: {
-    preload,
-    create,
-    update
+  scene: { preload, create, update },
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH
   }
 };
 
@@ -37,12 +36,15 @@ function preload() {
 }
 
 function create() {
-  this.add.image(400, 200, "sky");
+  this.add.image(config.width / 2, config.height / 2, "sky").setDisplaySize(config.width, config.height);
 
   const ground = this.physics.add.staticGroup();
-  ground.create(400, 390, "ground").setScale(2).refreshBody();
+  ground.create(config.width / 2, config.height - 20, "ground")
+        .setScale(2)
+        .refreshBody()
+        .setDisplaySize(config.width, 40);
 
-  player = this.physics.add.sprite(100, 300, "player");
+  player = this.physics.add.sprite(100, config.height - 100, "player");
   player.setCollideWorldBounds(true);
 
   this.anims.create({
@@ -71,32 +73,43 @@ function create() {
   this.physics.add.overlap(player, obstacles, hitObstacle, null, this);
 
   score = 0;
-  scoreText = this.add.text(16, 16, "Score: 0", { fontSize: "24px", fill: "#000" });
+  scoreText = this.add.text(16, 16, "Score: 0", {
+    fontSize: "24px",
+    fill: "#000"
+  });
 
   this.time.addEvent({
     delay: 1500,
     callback: () => {
       if (!gameOver) {
-        const obstacle = obstacles.create(800, 340, "obstacle");
-        obstacle.setVelocityX(-200);
+        const obstacle = obstacles.create(config.width, config.height - 60, "obstacle");
+        obstacle.setVelocityX(-300);
         obstacle.setImmovable(true);
+        obstacle.body.allowGravity = false;
       }
     },
     loop: true
   });
 
-  restartText = this.add.text(400, 200, "Game Over\nPress R to Restart", {
+  restartText = this.add.text(config.width / 2, config.height / 2, "Game Over\nPress R or Tap Restart", {
     fontSize: "32px",
     fill: "#ff0000",
     align: "center"
   }).setOrigin(0.5).setVisible(false);
 
   this.input.keyboard.on("keydown-R", () => {
-    if (gameOver) {
-      this.scene.restart();
-      gameOver = false;
-      score = 0;
+    if (gameOver) restartGame.call(this);
+  });
+
+  document.getElementById("jumpBtn").addEventListener("touchstart", () => {
+    if (!gameOver && player.body.touching.down) {
+      player.setVelocityY(-500);
+      jumpSound.play();
     }
+  });
+
+  document.getElementById("restartBtn").addEventListener("touchstart", () => {
+    if (gameOver) restartGame.call(this);
   });
 }
 
@@ -124,7 +137,14 @@ function hitObstacle(player, obstacle) {
   player.play("idle");
   hitSound.play();
   gameOver = true;
-
   scoreText.setText("Game Over! Score: " + Math.floor(score / 10));
   restartText.setVisible(true);
-    }
+  document.getElementById("restartBtn").style.display = "block";
+}
+
+function restartGame() {
+  gameOver = false;
+  score = 0;
+  document.getElementById("restartBtn").style.display = "none";
+  this.scene.restart();
+}
