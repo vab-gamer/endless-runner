@@ -11,7 +11,7 @@ const config = {
   physics: {
     default: "arcade",
     arcade: {
-      gravity: { y: 800 },
+      gravity: { y: 1000 },
       debug: false
     }
   },
@@ -23,15 +23,15 @@ const config = {
 };
 
 let game = new Phaser.Game(config);
-let player, cursors, ground, obstacles, clouds, sun, moon;
+let player, ground, cursors, obstacles, clouds, sun, moon;
 let startBox, gameOverBox, scoreBox;
 let timer = 0, scoreText, gameStarted = false, isDay = true;
 
 function preload() {
   this.load.image("ground", "https://labs.phaser.io/assets/sprites/platform.png");
-  this.load.image("cloud", "https://labs.phaser.io/assets/skies/cloud1.png");
-  this.load.image("sun", "https://labs.phaser.io/assets/skies/sun.png");
-  this.load.image("moon", "https://labs.phaser.io/assets/skies/moon.png");
+  this.load.image("cloud", "https://opengameart.org/sites/default/files/cloud1_1.png");
+  this.load.image("sun", "https://opengameart.org/sites/default/files/sun_8.png");
+  this.load.image("moon", "https://opengameart.org/sites/default/files/full_moon.png");
   this.load.image("obstacle", "https://labs.phaser.io/assets/sprites/spike.png");
 
   this.load.spritesheet("jinwoo", "https://raw.githubusercontent.com/vab-gamer/endless-runner/main/jinwoo_sprite.png", {
@@ -44,14 +44,11 @@ function create() {
   const w = this.scale.width;
   const h = this.scale.height;
 
-  // Clouds
-  clouds = this.add.tileSprite(0, 50, w, 200, "cloud").setOrigin(0).setScrollFactor(0);
+  clouds = this.add.tileSprite(0, 50, w, 150, "cloud").setOrigin(0).setScrollFactor(0);
 
-  // Sun & Moon
   sun = this.add.image(w - 100, 80, "sun").setScale(0.5).setAlpha(1);
   moon = this.add.image(100, 80, "moon").setScale(0.5).setAlpha(0);
 
-  // Start Message
   startBox = this.add.text(w / 2, h / 2 - 100, "Welcome to Vab-Gamer\nTap to Start", {
     fontSize: "24px",
     fill: "#ffffff",
@@ -60,21 +57,19 @@ function create() {
     padding: 10
   }).setOrigin(0.5);
 
-  // Ground
   ground = this.physics.add.staticGroup();
   const tileCount = Math.ceil(w / 64);
   for (let i = 0; i <= tileCount; i++) {
     ground.create(i * 64, h - 32, "ground").setScale(0.5).refreshBody();
   }
 
-  // Player
   player = this.physics.add.sprite(w * 0.15, h - 150, "jinwoo");
   player.setCollideWorldBounds(true).setScale(0.6).setSize(64, 100);
 
   this.anims.create({
     key: "jinwoo_run",
     frames: this.anims.generateFrameNumbers("jinwoo", { start: 0, end: 3 }),
-    frameRate: 6, // Slower for clarity
+    frameRate: 2, // very slow for visibility
     repeat: -1
   });
 
@@ -85,14 +80,12 @@ function create() {
   this.physics.add.collider(player, ground);
   this.physics.add.collider(player, obstacles, hitObstacle, null, this);
 
-  // Score Box
-  scoreBox = this.add.rectangle(70, 30, 140, 30, 0x000000, 0.5).setScrollFactor(0);
+  scoreBox = this.add.rectangle(70, 30, 140, 30, 0x000000, 0.6).setScrollFactor(0);
   scoreText = this.add.text(10, 20, "Time: 0", {
     fontSize: "18px",
     fill: "#ffffff"
   }).setScrollFactor(0);
 
-  // Game Over Box
   gameOverBox = this.add.text(w / 2, h / 2, "Game Over\nRestart Vab Gaming", {
     fontSize: "22px",
     fill: "#ffffff",
@@ -121,14 +114,14 @@ function startOrJump() {
       }
     });
   } else if (player.body.touching.down) {
-    player.setVelocityY(-400);
+    player.setVelocityY(-450);
   }
 }
 
 function spawnObstacle(scene) {
   const h = scene.scale.height;
   const obstacle = scene.physics.add.sprite(scene.scale.width + 50, h - 64, "obstacle");
-  obstacle.setVelocityX(-250).setImmovable(true).setGravity(false);
+  obstacle.setVelocityX(-300).setImmovable(true).setGravity(false);
   obstacles.add(obstacle);
 
   scene.time.addEvent({
@@ -150,7 +143,7 @@ function toggleDayNight(scene) {
 function update() {
   if (!gameStarted) return;
 
-  clouds.tilePositionX += 0.4;
+  clouds.tilePositionX += 0.5;
 
   ground.children.iterate(tile => {
     tile.x -= 2;
