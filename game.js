@@ -1,161 +1,137 @@
 const config = {
-  type: Phaser.AUTO,
-  backgroundColor: "#87CEEB",
-  scale: {
-    mode: Phaser.Scale.RESIZE,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    parent: "game-container",
+    type: Phaser.AUTO,
     width: window.innerWidth,
-    height: window.innerHeight
-  },
-  physics: {
-    default: "arcade",
-    arcade: {
-      gravity: { y: 1000 },
-      debug: false
+    height: window.innerHeight,
+    backgroundColor: '#87CEEB',
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 800 },
+            debug: false
+        }
+    },
+    scene: {
+        preload,
+        create,
+        update
     }
-  },
-  scene: {
-    preload,
-    create,
-    update
-  }
 };
 
-let game = new Phaser.Game(config);
-let player, ground, cursors, obstacles, clouds, sun, moon;
-let startBox, gameOverBox, scoreBox;
-let timer = 0, scoreText, gameStarted = false, isDay = true;
+let player, cursors, startText, gameStarted = false;
+let obstacles, score = 0, scoreText, gameOver = false;
+let sun, moon, clouds;
+let isDay = true;
+let startTime;
+let switchInterval = 60000;
+
+const game = new Phaser.Game(config);
 
 function preload() {
-  this.load.image("ground", "https://labs.phaser.io/assets/sprites/platform.png");
-  this.load.image("cloud", "https://opengameart.org/sites/default/files/cloud1_1.png");
-  this.load.image("sun", "https://opengameart.org/sites/default/files/sun_8.png");
-  this.load.image("moon", "https://opengameart.org/sites/default/files/full_moon.png");
-  this.load.image("obstacle", "https://labs.phaser.io/assets/sprites/spike.png");
-
-  this.load.spritesheet("jinwoo", "https://raw.githubusercontent.com/vab-gamer/endless-runner/main/jinwoo_sprite.png", {
-    frameWidth: 128,
-    frameHeight: 128
-  });
+    this.load.image('jinwoo', 'https://raw.githubusercontent.com/vab-gamer/endless-runner/main/jinwoo_sprite.png');
+    this.load.image('cloud', 'https://raw.githubusercontent.com/vab-gamer/endless-runner/main/cloud.png');
+    this.load.image('sun', 'https://raw.githubusercontent.com/vab-gamer/endless-runner/main/sun.png');
+    this.load.image('moon', 'https://raw.githubusercontent.com/vab-gamer/endless-runner/main/moon.png');
+    this.load.image('ant', 'https://raw.githubusercontent.com/vab-gamer/endless-runner/main/ant.png');
 }
 
 function create() {
-  const w = this.scale.width;
-  const h = this.scale.height;
+    startTime = this.time.now;
 
-  clouds = this.add.tileSprite(0, 50, w, 150, "cloud").setOrigin(0).setScrollFactor(0);
+    this.sky = this.add.rectangle(0, 0, config.width * 2, config.height, 0x87CEEB).setOrigin(0, 0);
 
-  sun = this.add.image(w - 100, 80, "sun").setScale(0.5).setAlpha(1);
-  moon = this.add.image(100, 80, "moon").setScale(0.5).setAlpha(0);
+    sun = this.add.image(config.width - 100, 100, 'sun').setScale(0.3);
+    moon = this.add.image(config.width - 100, 100, 'moon').setScale(0.3).setVisible(false);
+    clouds = this.add.group();
+    for (let i = 0; i < 3; i++) {
+        let cloud = this.add.image(i * 300, 100 + i * 30, 'cloud').setScale(0.4);
+        clouds.add(cloud);
+    }
 
-  startBox = this.add.text(w / 2, h / 2 - 100, "Welcome to Vab-Gamer\nTap to Start", {
-    fontSize: "24px",
-    fill: "#ffffff",
-    backgroundColor: "#000000aa",
-    align: "center",
-    padding: 10
-  }).setOrigin(0.5);
+    player = this.physics.add.sprite(100, config.height - 150, 'jinwoo').setScale(0.4);
+    player.setCollideWorldBounds(true);
 
-  ground = this.physics.add.staticGroup();
-  const tileCount = Math.ceil(w / 64);
-  for (let i = 0; i <= tileCount; i++) {
-    ground.create(i * 64, h - 32, "ground").setScale(0.5).refreshBody();
-  }
+    obstacles = this.physics.add.group();
 
-  player = this.physics.add.sprite(w * 0.15, h - 150, "jinwoo");
-  player.setCollideWorldBounds(true).setScale(0.6).setSize(64, 100);
-
-  this.anims.create({
-    key: "jinwoo_run",
-    frames: this.anims.generateFrameNumbers("jinwoo", { start: 0, end: 3 }),
-    frameRate: 2, // very slow for visibility
-    repeat: -1
-  });
-
-  this.input.on("pointerdown", startOrJump, this);
-
-  cursors = this.input.keyboard.createCursorKeys();
-  obstacles = this.physics.add.group();
-  this.physics.add.collider(player, ground);
-  this.physics.add.collider(player, obstacles, hitObstacle, null, this);
-
-  scoreBox = this.add.rectangle(70, 30, 140, 30, 0x000000, 0.6).setScrollFactor(0);
-  scoreText = this.add.text(10, 20, "Time: 0", {
-    fontSize: "18px",
-    fill: "#ffffff"
-  }).setScrollFactor(0);
-
-  gameOverBox = this.add.text(w / 2, h / 2, "Game Over\nRestart Vab Gaming", {
-    fontSize: "22px",
-    fill: "#ffffff",
-    backgroundColor: "#000000aa",
-    align: "center",
-    padding: 10
-  }).setOrigin(0.5).setVisible(false).setInteractive();
-
-  gameOverBox.on("pointerdown", () => location.reload());
-}
-
-function startOrJump() {
-  if (!gameStarted) {
-    gameStarted = true;
-    startBox.setVisible(false);
-    player.play("jinwoo_run");
-    spawnObstacle(this);
-
-    this.time.addEvent({
-      delay: 1000,
-      loop: true,
-      callback: () => {
-        timer++;
-        scoreText.setText("Time: " + timer + "s");
-        if (timer % 60 === 0) toggleDayNight(this);
-      }
+    scoreText = this.add.text(10, 10, 'Time: 0s', {
+        fontSize: '20px',
+        fill: '#000',
+        backgroundColor: '#ffffff',
+        padding: { x: 6, y: 4 }
     });
-  } else if (player.body.touching.down) {
-    player.setVelocityY(-450);
-  }
+
+    startText = this.add.text(config.width / 2, config.height / 2, 'Welcome to Vab-Gamer\nTap to Start', {
+        fontSize: '28px',
+        fill: '#fff',
+        align: 'center',
+        backgroundColor: '#000'
+    }).setOrigin(0.5);
+
+    this.input.on('pointerdown', () => {
+        if (!gameStarted) {
+            gameStarted = true;
+            startText.setVisible(false);
+            this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
+        } else if (gameOver) {
+            location.reload();
+        } else {
+            if (player.body.touching.down) {
+                player.setVelocityY(-450);
+            }
+        }
+    });
+
+    this.physics.add.collider(player, obstacles, hitObstacle, null, this);
 }
 
-function spawnObstacle(scene) {
-  const h = scene.scale.height;
-  const obstacle = scene.physics.add.sprite(scene.scale.width + 50, h - 64, "obstacle");
-  obstacle.setVelocityX(-300).setImmovable(true).setGravity(false);
-  obstacles.add(obstacle);
+function update(time, delta) {
+    if (!gameStarted || gameOver) return;
 
-  scene.time.addEvent({
-    delay: 2000,
-    callback: () => spawnObstacle(scene),
-    callbackScope: scene
-  });
+    // Scroll clouds
+    clouds.children.iterate(cloud => {
+        cloud.x -= 0.5;
+        if (cloud.x < -100) cloud.x = config.width + 100;
+    });
+
+    // Move obstacles
+    obstacles.children.iterate(obstacle => {
+        obstacle.x -= 4;
+        if (obstacle.x < -50) obstacle.destroy();
+    });
+
+    // Update score
+    score = Math.floor((this.time.now - startTime) / 1000);
+    scoreText.setText(`Time: ${score}s`);
+
+    // Day/Night Switch
+    if (score % 60 === 0 && score !== 0) {
+        if (isDay) {
+            this.sky.fillColor = 0x001d3d;
+            sun.setVisible(false);
+            moon.setVisible(true);
+            scoreText.setStyle({ fill: '#fff', backgroundColor: '#000' });
+        } else {
+            this.sky.fillColor = 0x87CEEB;
+            sun.setVisible(true);
+            moon.setVisible(false);
+            scoreText.setStyle({ fill: '#000', backgroundColor: '#fff' });
+        }
+        isDay = !isDay;
+    }
 }
 
-function toggleDayNight(scene) {
-  isDay = !isDay;
-  const bgColor = isDay ? "#87CEEB" : "#1e1e2f";
-  scene.cameras.main.setBackgroundColor(bgColor);
-
-  scene.tweens.add({ targets: sun, alpha: isDay ? 1 : 0, duration: 1000 });
-  scene.tweens.add({ targets: moon, alpha: isDay ? 0 : 1, duration: 1000 });
-}
-
-function update() {
-  if (!gameStarted) return;
-
-  clouds.tilePositionX += 0.5;
-
-  ground.children.iterate(tile => {
-    tile.x -= 2;
-    if (tile.x < -32) tile.x = config.scale.width + 32;
-  });
-
-  obstacles.children.iterate(obstacle => {
-    if (obstacle.x < -50) obstacle.destroy();
-  });
+function spawnObstacle() {
+    const obstacle = obstacles.create(config.width + 50, config.height - 100, 'ant').setScale(0.3);
+    obstacle.setImmovable();
+    obstacle.body.allowGravity = false;
 }
 
 function hitObstacle() {
-  game.scene.pause();
-  gameOverBox.setVisible(true);
-    }
+    gameOver = true;
+    this.physics.pause();
+    const overText = this.add.text(config.width / 2, config.height / 2, 'Game Over\nRestart Vab Gaming', {
+        fontSize: '26px',
+        fill: '#fff',
+        backgroundColor: '#000',
+        align: 'center'
+    }).setOrigin(0.5);
+                                   }
