@@ -29,32 +29,35 @@ const game = new Phaser.Game(config);
 function preload() {
   this.load.image("ground", "https://labs.phaser.io/assets/sprites/platform.png");
 
+  // Load Jinwoo sprite with correct frame size
   this.load.spritesheet("jinwoo", "https://raw.githubusercontent.com/vab-gamer/endless-runner/refs/heads/main/jinwoo_sprite.png", {
-    frameWidth: 32,
-    frameHeight: 32
+    frameWidth: 128,
+    frameHeight: 128
   });
 
   this.load.image("obstacle", "https://labs.phaser.io/assets/sprites/spike.png");
 }
 
 function create() {
-  // Tap to start text
+  // Tap to start
   startText = this.add.text(config.width / 2, config.height / 2, "Tap to Start", {
     fontSize: "24px",
     fill: "#ffffff"
   }).setOrigin(0.5);
 
-  // Ground group
+  // Create ground
   ground = this.physics.add.staticGroup();
   for (let x = 0; x < config.width; x += 64) {
     ground.create(x, config.height - 32, "ground").setScale(0.5).refreshBody();
   }
 
-  // Jinwoo character
-  player = this.physics.add.sprite(100, config.height - 100, "jinwoo");
+  // Add Jinwoo
+  player = this.physics.add.sprite(100, config.height - 150, "jinwoo");
   player.setCollideWorldBounds(true);
-  player.setSize(20, 30); // Adjust to fit the sprite
+  player.setSize(64, 100); // Adjust hitbox
+  player.setScale(0.8);    // Resize on screen if needed
 
+  // Run animation
   this.anims.create({
     key: "jinwoo_run",
     frames: this.anims.generateFrameNumbers("jinwoo", { start: 0, end: 3 }),
@@ -62,7 +65,6 @@ function create() {
     repeat: -1
   });
 
-  // Controls
   cursors = this.input.keyboard.createCursorKeys();
   this.input.on("pointerdown", startOrJump, this);
 
@@ -120,4 +122,4 @@ function hitObstacle() {
   game.scene.pause();
   alert("Game Over!");
   location.reload();
-}
+      }
