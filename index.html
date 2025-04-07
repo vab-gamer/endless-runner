@@ -3,17 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Vab Gamer - Endless Runner</title>
+  <title>Endless Runner - Vab Gamer</title>
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      overflow: hidden;
       background: #000;
-    }
-    #game-container {
-      width: 100vw;
-      height: 100vh;
+      overflow: hidden;
     }
     canvas {
       display: block;
@@ -21,12 +16,7 @@
   </style>
 </head>
 <body>
-  <div id="game-container"></div>
-
-  <!-- Phaser CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-
-  <!-- Your game logic -->
-  <script src="game.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
